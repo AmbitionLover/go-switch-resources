@@ -3,19 +3,26 @@ package main
 import (
 	"errors"
 	"fmt"
-	"gopkg.in/ini.v1"
+	"gopkg.in/yaml.v2"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+type BaseInfo struct {
+	Versions string `yaml:"versions"`
+	Ip       string `yaml:"ip"`
+	Host     string `yaml:"host"`
+}
 
 const (
 	resources = "private-resources/"
 )
 
 var inputName string
-var versions = []string{"4.0", "4.1.1", "4.1.2", "4.1.3", "4.2.2", "4.2.0"}
+var versions = []string{"4.0", "4.1.1", "4.1.2", "4.1.3", "4.1.4", "4.2.0", "4.2.1", "4.2.2", "4.2.3"}
 
 func main() {
 
@@ -24,12 +31,13 @@ func main() {
 	fmt.Println("请输入你需要切换分支全称,输入q退出程序")
 
 	for {
-		cfg, err := getConfig()
+		info := BaseInfo{}
+		conf, err := info.GetConf()
 		if err != nil {
 			fmt.Printf("错误信息：%s\n", err)
 			continue
 		}
-		destPath := cfg.Section("").Key("destPath").In("private-java", versions)
+		destPath := conf.Versions
 
 		fmt.Printf("移动的主目录是 %s\n", string(destPath))
 
@@ -64,7 +72,7 @@ func before(relativePath string) {
 	fmt.Println("资源替换文件夹检查成功")
 }
 
-func getConfig() (*ini.File, error) {
+func (c *BaseInfo) GetConf() (*BaseInfo, error) {
 
 	_, err := fmt.Scan(&inputName)
 	if err == io.EOF || inputName == "Q" || inputName == "q" {
@@ -85,11 +93,15 @@ func getConfig() (*ini.File, error) {
 		return nil, errors.New(inputName + " templates 文件夹不存在")
 	}
 
-	cfg, err := ini.Load(relativePath + "/config.ini")
+	yamlFile, err := ioutil.ReadFile(relativePath + "/config.yml")
 	if err != nil {
-		return nil, errors.New(inputName + " 配置文件 config.ini 不存在")
+		fmt.Println(err.Error())
 	}
-	return cfg, err
+	err = yaml.Unmarshal(yamlFile, c)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return c, err
 }
 
 /**
