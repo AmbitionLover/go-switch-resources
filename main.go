@@ -38,6 +38,9 @@ func main() {
 			continue
 		}
 		destPath := conf.Versions
+		if len(destPath) == 0 {
+			destPath = "private-java"
+		}
 
 		fmt.Printf("移动的主目录是 %s\n", string(destPath))
 
